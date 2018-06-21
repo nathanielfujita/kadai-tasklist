@@ -13,13 +13,24 @@ class TasksController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index() 
     {
-        $tasks = Task::all();
+        $data= [] ;
+        if (\Auth::check()) {
+                 
+            $user = \Auth::user();
+            $tasks = $user->tasks()->orderBy('created_at', 'desc')->paginate(10);
+
+            $data = [
+                'tasks' => $tasks,
+            ];
         
-        return view('tasks.index', [
-            'tasks' => $tasks,
-        ]);
+            return view('tasks.index', $data
+            );
+        }
+     
+         else {return view('welcome');
+        }
     }
 
     /**
@@ -53,7 +64,9 @@ class TasksController extends Controller
         $task = new Task;
         $task->status = $request->status;
         $task->content = $request->content;
+        $task->user_id = \Auth::user()->id;
         $task->save();
+        
 
 
         return redirect('/');
@@ -66,13 +79,19 @@ class TasksController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function show($id)
+    
     {
-        $task = Task::find($id);
+        $task = \App\Task::find($id);
+        if (\Auth::id() != $task->user_id) {
+              return redirect('/');
+        } else { 
+        
+            $data = [
+                 'task' => $task,
+        ];
+       return view('tasks.show', $data);
+    }}
 
-        return view('tasks.show', [
-            'task' => $task,
-        ]);
-    }
 
     /**
      * Show the form for editing the specified resource.
@@ -83,10 +102,15 @@ class TasksController extends Controller
     public function edit($id)
     {
         $task = Task::find($id);
-
-        return view('tasks.edit', [
-            'task' => $task,
-        ]);
+        
+        if (\Auth::id() != $task->user_id) {
+              return redirect('/');
+        } else { 
+        
+            return view('tasks.edit', [
+                'task' => $task,
+            ]);
+        }
     }
 
     /**
@@ -122,8 +146,17 @@ class TasksController extends Controller
     public function destroy($id)
     {
         $task = Task::find($id);
+
+        if (\Auth::id() != $task->user_id) {
+              return redirect('/');
+        } else { 
+        
+            $data = [
+                 'task' => $task,
+        ];
+        
         $task->delete();
 
         return redirect('/');
     }
-}
+}}
